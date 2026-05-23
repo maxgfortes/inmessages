@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="src/style/direct.css">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" href="./public/img/icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/public/img/icon.png">
+  <meta name="apple-mobile-web-app-title" content="inMessages">
+  <style>*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}textarea,input{-webkit-user-select:text;user-select:text;}</style>
+  <title>inMessages</title>
+</head>
+<body>
+<div id="app">
+  <div class="view view--list" id="viewList">
+    <div class="header">
+      <button class="header__compose" id="editBtn">Edit</button>
+      <h1 class="header__title">Messages</h1>
+      <button class="header__compose" id="composeBtn" aria-label="New conversation">Add</button>
+    </div>
+
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search…">
+    </div>
+
+    <div id="conversationsList">
+      <div class="empty-state">
+        <p>No conversations yet.<br>Tap + to start.</p>
+      </div>
+    </div>
+
+    <div class="list-footer">
+      <button class="btn-logout" id="logoutBtn">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="view view--chat" id="viewChat">
+    <div class="chat-header">
+      <button class="header__back" id="backBtn" aria-label="Back">
+        <svg viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 1 L2 8 L8 15"/>
+        </svg>
+        Back
+      </button>
+
+      <div class="chat-header__info" id="chatHeaderInfo">
+        <div class="chat-header__name" id="chatName"></div>
+      </div>
+
+      <div class="chat-header__actions">
+        <button class="btn-edit" id="blockBtn" title="Options">Edit</button>
+      </div>
+    </div>
+
+    <div class="actions-panel" id="actionsPanel">
+      <div class="actions-panel__inner">
+        <div class="actions-panel__username" id="panelUsername"></div>
+        <button class="actions-panel__btn actions-panel__btn--block" id="blockUserBtn">Block</button>
+        <button class="actions-panel__btn actions-panel__btn--cancel" id="cancelActionsBtn">Cancel</button>
+      </div>
+    </div>
+
+    <div id="messagesContainer"></div>
+
+    <div class="typing-indicator" id="typingIndicator" style="display:none"></div>
+
+    <div class="reply-bar" id="replyBar">
+      <div class="reply-bar__content">
+        <div class="reply-bar__label">Replying</div>
+        <div class="reply-bar__text" id="replyBarText"></div>
+      </div>
+      <button class="reply-bar__dismiss" id="dismissReply">✕</button>
+    </div>
+
+    <div class="input-area">
+      <textarea class="msg-input" id="messageInput" placeholder="iMessage" rows="1"></textarea>
+      <button class="btn-send" id="sendBtn" disabled aria-label="Send">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="composeModal">
+  <div class="modal-sheet" id="composeSheet">
+    <div class="chat-header">
+      <button class="header__back none" aria-label="Back">
+        <svg viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 1 L2 8 L8 15"/>
+        </svg>
+        Back
+      </button>
+      <div class="chat-header__info">
+        <div class="chat-header__name">New Message</div>
+      </div>
+      <div class="chat-header__actions">
+        <button class="btn-edit" id="closeModalBtn">Cancel</button>
+      </div>
+    </div>
+
+    <div class="sheet-area">
+      <div class="sheet-top">
+        <div class="form-field">
+          <label class="form-label" for="newUsername">To:</label>
+          <input class="form-input" type="text" id="newUsername" placeholder="@username" autocomplete="off" autocapitalize="none">
+        </div>
+      </div>
+      <div class="sheet-bottom">
+        <div class="form-error" id="composeError"></div>
+        <div class="input-area">
+          <textarea class="msg-input" id="firstMessage" placeholder="iMessage" rows="1"></textarea>
+          <button class="btn-send" id="startChatBtn" disabled aria-label="Send">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import '/pwa.js';
+  import './src/components/direct-chat.js';
+</script>
+</body>
+</html>

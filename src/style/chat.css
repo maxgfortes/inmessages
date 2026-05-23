@@ -1,0 +1,151 @@
+
+:root {
+  --imessage-blue: #007AFF;
+  --imessage-gray: #e5e5e9;
+  --imessage-dark: #333333;
+  --imessage-light: #f2f2f7;
+}
+
+@keyframes messagePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.message-bubble {
+  animation: messagePop 0.2s ease-out;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    opacity: 0.4;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+.typing-indicator::before,
+.typing-indicator::after {
+  content: '';
+}
+
+.conversation-item {
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.conversation-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary-blue);
+  border-radius: 0 3px 3px 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.conversation-item.active::before {
+  opacity: 1;
+}
+
+.message-bubble.sent + .message-bubble.sent {
+  margin-top: 2px;
+}
+
+.message-bubble.received + .message-bubble.received {
+  margin-top: 2px;
+}
+
+.message-bubble.sent + .message-bubble.received,
+.message-bubble.received + .message-bubble.sent {
+  margin-top: 12px;
+}
+
+.btn-compose:focus,
+.btn-send:focus,
+.form-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+* {
+  transition: opacity 0.1s ease;
+}
+
+@media print {
+  .sidebar,
+  .chat-header,
+  .message-input-area {
+    display: none;
+  }
+
+  .messages-container {
+    border: none;
+    background: white;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .message-bubble.sent .message-text {
+    border: 1px solid #000;
+  }
+
+  .message-bubble.received .message-text {
+    border: 1px solid #000;
+  }
+
+  .conversation-item.active {
+    border: 1px solid #000;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #1a1a1a;
+    color: #f5f5f5;
+  }
+
+  .sidebar {
+    background: #1f1f1f;
+    border-color: #333;
+  }
+
+  .auth-box {
+    background: #1f1f1f;
+    color: #f5f5f5;
+  }
+
+  .form-input,
+  .search-input {
+    background: #2a2a2a;
+    border-color: #333;
+    color: #f5f5f5;
+  }
+
+  .form-input:focus {
+    background: #333;
+  }
+
+  .message-bubble.received .message-text {
+    background: #333;
+    color: #f5f5f5;
+  }
+
+  .conversation-item:hover {
+    background: #2a2a2a;
+  }
+}

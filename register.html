@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>inMessages</title>
+  <link rel="stylesheet" href="src/style/root.css">
+  <link rel="stylesheet" href="src/style/register.css">
+  <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/png" href="./public/img/icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="./public/img/icon.png">
+  <style>*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}input,textarea{-webkit-user-select:text;user-select:text;}</style>
+</head>
+<body>
+  <div class="auth-container register-container">
+    <div class="auth-box">
+      <h1 class="auth-title">inMessages</h1>
+      <p class="auth-subtitle">Create your free account</p>
+      
+      <form id="registerForm" class="auth-form">
+        <div class="form-group">
+          <input 
+            type="email" 
+            id="email" 
+            placeholder="Email"
+            required
+            class="form-input"
+          >
+        </div>
+
+        <div class="form-group">
+          <input 
+            type="text" 
+            id="username" 
+            placeholder="Username (unique, permanent)"
+            required
+            class="form-input"
+          >
+        </div>
+
+        <div class="form-group">
+          <input 
+            type="text" 
+            id="displayName" 
+            placeholder="Display name"
+            required
+            class="form-input"
+          >
+        </div>
+
+        <div class="form-group">
+          <input 
+            type="password" 
+            id="password" 
+            placeholder="Password"
+            required
+            class="form-input"
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+      </form>
+
+      <div class="form-error" id="errorMessage"></div>
+
+      <div class="auth-footer">
+        <p>Already have an account? <a href="login.html">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/pwa.js"></script>
+  <script type="module">
+    import { authService } from './src/services/auth.js';
+
+    const form = document.getElementById('registerForm');
+    const errorDiv = document.getElementById('errorMessage');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const username = document.getElementById('username').value.toLowerCase();
+      const displayName = document.getElementById('displayName').value;
+      const password = document.getElementById('password').value;
+
+      if (password.length < 6) {
+        errorDiv.textContent = 'Password must be at least 6 characters';
+        return;
+      }
+
+      const result = await authService.register(email, password, username, displayName);
+      
+      if (result.success) {
+        window.location.href = 'direct.html';
+      } else {
+        errorDiv.textContent = result.error || 'Failed to create account. Try again.';
+      }
+    });
+  </script>
+</body>
+</html>
