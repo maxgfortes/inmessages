@@ -349,6 +349,7 @@
       justify-content: center;
       padding: 64px 32px;
       height: 100%;
+      display: none;
     }
 
     .spinner {
