@@ -56,8 +56,8 @@ class AuthService {
       const user = credential.user;
       const uid = user.uid;
 
-      // Force token refresh so Firestore recognizes the new auth session
-      await user.getIdToken(true);
+      // Wait for token to be ready
+      await user.getIdToken();
 
       // Write user doc
       console.log('📝 Writing /users doc...');
