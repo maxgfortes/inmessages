@@ -18,6 +18,14 @@ import {
   deleteField
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
+function sanitizeUserData(user) {
+  return {
+    uid:         user.uid,
+    username:    user.username,
+    displayName: user.displayName,
+  };
+}
+
 class MessagesService {
   constructor() {
     this.conversations = {};
@@ -28,7 +36,7 @@ class MessagesService {
     try {
       const currentUid = authService.currentUser.uid;
       const otherUser = await authService.getUserByUsername(otherUsername);
-
+      
       if (!otherUser) {
         throw new Error('User not found');
       }
@@ -39,20 +47,21 @@ class MessagesService {
         throw new Error('Cannot message this user');
       }
 
-      const conversationId = [currentUid, otherUid].sort().join('_');
+      const participants = [currentUid, otherUid].sort();
+      const conversationId = participants.join('_');
 
       const convDoc = await getDoc(doc(db, 'conversations', conversationId));
-      
+
       if (!convDoc.exists()) {
         await setDoc(doc(db, 'conversations', conversationId), {
-          participants: [currentUid, otherUid],
+          participants: participants,
           participantsData: {
-            [currentUid]: authService.currentUserData,
-            [otherUid]: otherUser
+            [currentUid]: sanitizeUserData(authService.currentUserData),
+            [otherUid]:   sanitizeUserData(otherUser),
           },
-          lastMessage: null,
+          lastMessage:     '',
           lastMessageTime: serverTimestamp(),
-          createdAt: serverTimestamp()
+          createdAt:       serverTimestamp(),
         });
       }
 
@@ -68,21 +77,25 @@ class MessagesService {
       const currentUid = authService.currentUser.uid;
 
       const messageData = {
-        sender: currentUid,
-        senderData: authService.currentUserData,
-        text: text,
-        timestamp: serverTimestamp(),
-        read: false,
-        replyTo: replyTo
+        sender:     currentUid,
+        senderData: sanitizeUserData(authService.currentUserData),
+        text:       text,
+        timestamp:  serverTimestamp(),
+        read:       false,
       };
+
+      if (replyTo) {
+        messageData.replyTo = replyTo;
+      }
+
       const messageRef = await addDoc(
         collection(db, 'conversations', conversationId, 'messages'),
         messageData
       );
 
       await updateDoc(doc(db, 'conversations', conversationId), {
-        lastMessage: text,
-        lastMessageTime: serverTimestamp()
+        lastMessage:     text,
+        lastMessageTime: serverTimestamp(),
       });
 
       return { success: true, messageId: messageRef.id };
@@ -147,14 +160,12 @@ class MessagesService {
     return unsubscribe;
   }
 
-  // Get conversations list
   listenToConversations(callback) {
     const currentUid = authService.currentUser.uid;
     const conversationsRef = collection(db, 'conversations');
     const q = query(
       conversationsRef,
-      where('participants', 'array-contains', currentUid),
-      orderBy('lastMessageTime', 'desc')
+      where('participants', 'array-contains', currentUid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -170,6 +181,14 @@ class MessagesService {
           ...data
         });
       });
+      
+      // Ordena por lastMessageTime no client-side para evitar problemas com null
+      conversations.sort((a, b) => {
+        const timeA = a.lastMessageTime?.getTime() || 0;
+        const timeB = b.lastMessageTime?.getTime() || 0;
+        return timeB - timeA;
+      });
+      
       callback(conversations);
     }, (error) => {
       console.error('Listen conversations error:', error);
@@ -183,14 +202,13 @@ class MessagesService {
     try {
       await updateDoc(
         doc(db, 'conversations', conversationId, 'messages', messageId),
-        {
-          read: true
-        }
+        { read: true }
       );
     } catch (error) {
       console.error('Mark as read error:', error);
     }
   }
+
   unsubscribeAll() {
     this.unsubscribes.forEach(unsubscribe => unsubscribe());
     this.unsubscribes = [];

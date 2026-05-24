@@ -56,12 +56,13 @@ authService.onAuthStateChanged((user) => {
 });
 
 function loadConversations() {
+  convList.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   messagesService.listenToConversations(renderConversations);
 }
 
 function renderConversations(conversations) {
   if (!conversations.length) {
-    convList.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><p>No conversations yet.<br>Tap + to start.</p></div>`;
+    convList.innerHTML = `<div class="empty-state"><div class="empty-icon"></div><p>No conversations yet.<br>Tap + to start.</p></div>`;
     return;
   }
 
