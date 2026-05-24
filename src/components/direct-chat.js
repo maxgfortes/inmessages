@@ -7,8 +7,6 @@ let typingTimeout = null;
 let isTyping = false;
 let replyTo = null;
 let actionsPanelOpen = false;
-let lastMessageIds = new Set(); // Track rendered messages
-let lastConversationIds = new Set(); // Track rendered conversations
 
 const viewList = document.getElementById('viewList');
 const viewChat = document.getElementById('viewChat');
@@ -65,47 +63,32 @@ function loadConversations() {
 function renderConversations(conversations) {
   if (!conversations.length) {
     convList.innerHTML = `<div class="empty-state"><div class="empty-icon"></div><p>No conversations yet.<br>Tap + to start.</p></div>`;
-    lastConversationIds.clear();
     return;
   }
 
+  convList.innerHTML = '';
   conversations.forEach(conv => {
-    const username = conv.otherUser.username;
-    const existingEl = document.querySelector(`[data-username="${username}"]`);
-    
+    const el = document.createElement('div');
+    el.className = 'conv-item';
+    el.dataset.username = conv.otherUser.username;
     const initial = conv.otherUser.displayName.charAt(0).toUpperCase();
     const time = conv.lastMessageTime ? formatTime(conv.lastMessageTime) : '';
     const preview = conv.lastMessage ? conv.lastMessage.substring(0, 40) : 'No messages yet';
 
-    if (existingEl) {
-      // Update existing conversation
-      existingEl.querySelector('.conv-time').textContent = time;
-      existingEl.querySelector('.conv-preview').textContent = esc(preview);
-      // Move to top
-      convList.prepend(existingEl);
-    } else {
-      // Create new conversation
-      const el = document.createElement('div');
-      el.className = 'conv-item';
-      el.dataset.username = username;
-      el.style.animation = 'slideIn 0.3s ease-out';
-
-      el.innerHTML = `
-        <div class="conv-avatar">${initial}</div>
-        <div class="conv-body">
-          <div class="conv-row">
-            <span class="conv-name">${esc(conv.otherUser.displayName)}</span>
-            <span class="conv-time">${time}</span>
-          </div>
-          <p class="conv-preview">${esc(preview)}</p>
+    el.innerHTML = `
+      <div class="conv-avatar">${initial}</div>
+      <div class="conv-body">
+        <div class="conv-row">
+          <span class="conv-name">${esc(conv.otherUser.displayName)}</span>
+          <span class="conv-time">${time}</span>
         </div>
-        <span class="conv-arrow">›</span>
-      `;
+        <p class="conv-preview">${esc(preview)}</p>
+      </div>
+      <span class="conv-arrow">›</span>
+    `;
 
-      el.addEventListener('click', () => openConversation(conv));
-      convList.prepend(el);
-      lastConversationIds.add(username);
-    }
+    el.addEventListener('click', () => openConversation(conv));
+    convList.appendChild(el);
   });
 }
 
@@ -115,7 +98,6 @@ function openConversation(conv) {
 
   chatName.textContent = conv.otherUser.displayName;
   messagesContainer.innerHTML = '';
-  lastMessageIds.clear(); // Reset message tracking
   clearReply();
   closeActionsPanel();
 
@@ -123,7 +105,7 @@ function openConversation(conv) {
 
   showChat();
 
-  messagesService.listenToMessages(conv.id, renderMessagesOptimized);
+  messagesService.listenToMessages(conv.id, renderMessages);
   messagesService.listenToTyping(conv.id, conv.otherUser.uid, (typing) => {
     typingIndicator.style.display = typing ? 'block' : 'none';
     typingIndicator.textContent = typing ? `${conv.otherUser.displayName} is typing…` : '';
@@ -136,47 +118,32 @@ backBtn.addEventListener('click', () => {
   messagesService.unsubscribeAll();
   currentConversationId = null;
   currentOtherUser = null;
-  lastMessageIds.clear();
   showList();
 });
-Optimized(messages) {
+
+function renderMessages(messages) {
   const uid = authService.currentUser.uid;
-  const scrollShouldFollow = messagesContainer.scrollTop > messagesContainer.scrollHeight - messagesContainer.clientHeight - 100;
+  messagesContainer.innerHTML = '';
   let lastDate = null;
 
-  // Build map of existing date separators
-  const existingDates = new Map();
-  document.querySelectorAll('.date-sep').forEach(sep => {
-    existingDates.set(sep.textContent, sep);
-  });
-
   messages.forEach(msg => {
-    // Skip if already rendered
-    if (lastMessageIds.has(msg.id)) return;
-    
-    lastMessageIds.add(msg.id);
-
     let ts = msg.timestamp ?? null;
     if (ts && typeof ts.toDate === 'function') ts = ts.toDate();
     else if (ts && !(ts instanceof Date)) ts = new Date(ts);
     if (ts && isNaN(ts.getTime())) ts = null;
 
     const msgDate = ts ? ts.toDateString() : null;
-    const formattedDate = formatDate(ts);
-    
-    // Add date separator if needed
-    if (msgDate && !existingDates.has(formattedDate)) {
+    if (msgDate && msgDate !== lastDate) {
       const sep = document.createElement('div');
       sep.className = 'date-sep';
-      sep.textContent = formattedDate;
+      sep.textContent = formatDate(ts);
       messagesContainer.appendChild(sep);
-      existingDates.set(formattedDate, sep);
+      lastDate = msgDate;
     }
 
     const isSent = msg.sender === uid;
     const wrap = document.createElement('div');
     wrap.className = `msg-wrap ${isSent ? 'sent' : 'received'}`;
-    wrap.style.animation = 'slideIn 0.3s ease-out';
 
     const replyHTML = msg.replyTo ? `
       <div class="msg-reply">
@@ -198,10 +165,6 @@ Optimized(messages) {
     messagesContainer.appendChild(wrap);
   });
 
-  // Auto-scroll if user was at bottom or receiving new message
-  if (scrollShouldFollow || lastMessageIds.size === messages.length) {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  }
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
