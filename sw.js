@@ -3,16 +3,16 @@ const STATIC_CACHE = `inMessages-static-${CACHE_VERSION}`;
 const MSG_CACHE    = `inMessages-messages-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
-  '/',
-  '/direct.html',
-  '/login.html',
-  '/register.html',
-  '/src/style/direct.css',
-  '/src/style/login.css',
-  '/src/style/register.css',
-  '/src/style/root.css',
-  '/src/components/direct-chat.js',
-  '/manifest.json'
+  './',
+  './direct.html',
+  './login.html',
+  './register.html',
+  './src/style/direct.css',
+  './src/style/login.css',
+  './src/style/register.css',
+  './src/style/root.css',
+  './src/components/direct-chat.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
