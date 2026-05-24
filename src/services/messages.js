@@ -173,12 +173,16 @@ class MessagesService {
       snapshot.forEach((doc) => {
         const data = doc.data();
         const otherUid = data.participants.find(id => id !== currentUid);
+        const raw = data.lastMessageTime;
+        let lastMessageTime = null;
+        if (raw && typeof raw.toDate === 'function') lastMessageTime = raw.toDate();
+        else if (raw instanceof Date) lastMessageTime = raw;
         conversations.push({
+          ...data,
           id: doc.id,
           otherUser: data.participantsData[otherUid],
           lastMessage: data.lastMessage,
-          lastMessageTime: data.lastMessageTime?.toDate(),
-          ...data
+          lastMessageTime,
         });
       });
       

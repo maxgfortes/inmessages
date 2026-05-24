@@ -56,10 +56,11 @@ class AuthService {
       const user = credential.user;
       const uid = user.uid;
 
-      // Wait for token to be ready
-      await user.getIdToken();
+      // Force token refresh so Firestore recognizes the new auth session
+      await user.getIdToken(true);
 
       // Write user doc
+      console.log('📝 Writing /users doc...');
       await setDoc(doc(db, 'users', uid), {
         uid,
         email,
@@ -69,12 +70,15 @@ class AuthService {
         blocked:     [],
         blockedBy:   []
       });
+      console.log('✅ /users doc created');
 
       // Write username doc
+      console.log('📝 Writing /usernames doc...');
       await setDoc(usernameRef, {
         uid,
         createdAt: serverTimestamp()
       });
+      console.log('✅ /usernames doc created');
 
       // Set local state
       this.currentUser = user;
