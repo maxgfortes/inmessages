@@ -20,8 +20,8 @@ import {
 
 function sanitizeUserData(user) {
   return {
-    uid:         user.uid,
-    username:    user.username,
+    uid: user.uid,
+    username: user.username,
     displayName: user.displayName,
   };
 }
@@ -36,38 +36,41 @@ class MessagesService {
     try {
       const currentUid = authService.currentUser.uid;
       const otherUser = await authService.getUserByUsername(otherUsername);
-      
+
       if (!otherUser) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       const otherUid = otherUser.uid;
 
-      if (authService.isUserBlocked(otherUid) || authService.isUserBlockingMe(otherUid)) {
-        throw new Error('Cannot message this user');
+      if (
+        authService.isUserBlocked(otherUid) ||
+        authService.isUserBlockingMe(otherUid)
+      ) {
+        throw new Error("Cannot message this user");
       }
 
       const participants = [currentUid, otherUid].sort();
-      const conversationId = participants.join('_');
+      const conversationId = participants.join("_");
 
-      const convDoc = await getDoc(doc(db, 'conversations', conversationId));
+      const convDoc = await getDoc(doc(db, "conversations", conversationId));
 
       if (!convDoc.exists()) {
-        await setDoc(doc(db, 'conversations', conversationId), {
-          participants: participants,
+        await setDoc(doc(db, "conversations", conversationId), {
+          participants,
           participantsData: {
             [currentUid]: sanitizeUserData(authService.currentUserData),
-            [otherUid]:   sanitizeUserData(otherUser),
+            [otherUid]: sanitizeUserData(otherUser),
           },
-          lastMessage:     '',
+          lastMessage: "",
           lastMessageTime: serverTimestamp(),
-          createdAt:       serverTimestamp(),
+          createdAt: serverTimestamp(),
         });
       }
 
       return { success: true, conversationId, otherUser };
     } catch (error) {
-      console.error('Create conversation error:', error);
+      console.error("Create conversation error:", error);
       return { success: false, error: error.message };
     }
   }
@@ -77,11 +80,11 @@ class MessagesService {
       const currentUid = authService.currentUser.uid;
 
       const messageData = {
-        sender:     currentUid,
+        sender: currentUid,
         senderData: sanitizeUserData(authService.currentUserData),
-        text:       text,
-        timestamp:  serverTimestamp(),
-        read:       false,
+        text,
+        timestamp: serverTimestamp(),
+        read: false,
       };
 
       if (replyTo) {
@@ -89,39 +92,53 @@ class MessagesService {
       }
 
       const messageRef = await addDoc(
-        collection(db, 'conversations', conversationId, 'messages'),
+        collection(db, "conversations", conversationId, "messages"),
         messageData
       );
 
-      await updateDoc(doc(db, 'conversations', conversationId), {
-        lastMessage:     text,
+      await updateDoc(doc(db, "conversations", conversationId), {
+        lastMessage: text,
         lastMessageTime: serverTimestamp(),
       });
 
       return { success: true, messageId: messageRef.id };
     } catch (error) {
-      console.error('Send message error:', error);
+      console.error("Send message error:", error);
       return { success: false, error: error.message };
     }
   }
 
   listenToMessages(conversationId, callback) {
-    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+    const messagesRef = collection(
+      db,
+      "conversations",
+      conversationId,
+      "messages"
+    );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messages = [];
-      snapshot.forEach((doc) => {
-        messages.push({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate()
+    const q = query(messagesRef, orderBy("timestamp", "asc"));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const messages = [];
+
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+
+          messages.push({
+            id: docSnap.id,
+            ...data,
+            timestamp: data.timestamp?.toDate?.() || null,
+          });
         });
-      });
-      callback(messages);
-    }, (error) => {
-      console.error('Listen messages error:', error);
-    });
+
+        callback(messages);
+      },
+      (error) => {
+        console.error("Listen messages error:", error);
+      }
+    );
 
     this.unsubscribes.push(unsubscribe);
     return unsubscribe;
@@ -133,28 +150,33 @@ class MessagesService {
       const typingKey = `typing_${currentUid}`;
 
       if (isTyping) {
-        await updateDoc(doc(db, 'conversations', conversationId), {
-          [typingKey]: serverTimestamp()
+        await updateDoc(doc(db, "conversations", conversationId), {
+          [typingKey]: serverTimestamp(),
         });
       } else {
-        await updateDoc(doc(db, 'conversations', conversationId), {
-          [typingKey]: deleteField()
+        await updateDoc(doc(db, "conversations", conversationId), {
+          [typingKey]: deleteField(),
         });
       }
     } catch (error) {
-      console.error('Set typing error:', error);
+      console.error("Set typing error:", error);
     }
   }
 
   listenToTyping(conversationId, otherUid, callback) {
-    const unsubscribe = onSnapshot(doc(db, 'conversations', conversationId), (doc) => {
-      const data = doc.data() || {};
-      const typingKey = `typing_${otherUid}`;
-      const isTyping = data[typingKey] ? true : false;
-      callback(isTyping);
-    }, (error) => {
-      console.error('Listen typing error:', error);
-    });
+    const unsubscribe = onSnapshot(
+      doc(db, "conversations", conversationId),
+      (docSnap) => {
+        const data = docSnap.data() || {};
+        const typingKey = `typing_${otherUid}`;
+        const isTyping = !!data[typingKey];
+
+        callback(isTyping);
+      },
+      (error) => {
+        console.error("Listen typing error:", error);
+      }
+    );
 
     this.unsubscribes.push(unsubscribe);
     return unsubscribe;
@@ -162,37 +184,47 @@ class MessagesService {
 
   listenToConversations(callback) {
     const currentUid = authService.currentUser.uid;
-    const conversationsRef = collection(db, 'conversations');
+    const conversationsRef = collection(db, "conversations");
+
     const q = query(
       conversationsRef,
-      where('participants', 'array-contains', currentUid)
+      where("participants", "array-contains", currentUid)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const conversations = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const otherUid = data.participants.find(id => id !== currentUid);
-        conversations.push({
-          id: doc.id,
-          otherUser: data.participantsData[otherUid],
-          lastMessage: data.lastMessage,
-          lastMessageTime: data.lastMessageTime?.toDate(),
-          ...data
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const conversations = [];
+
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const otherUid = data.participants.find(
+            (id) => id !== currentUid
+          );
+
+          conversations.push({
+            ...data,
+            id: docSnap.id,
+            otherUser: data.participantsData?.[otherUid] || null,
+            lastMessage: data.lastMessage || "",
+            lastMessageTime:
+              data.lastMessageTime?.toDate?.() || null,
+          });
         });
-      });
-      
-      // Ordena por lastMessageTime no client-side para evitar problemas com null
-      conversations.sort((a, b) => {
-        const timeA = a.lastMessageTime?.getTime() || 0;
-        const timeB = b.lastMessageTime?.getTime() || 0;
-        return timeB - timeA;
-      });
-      
-      callback(conversations);
-    }, (error) => {
-      console.error('Listen conversations error:', error);
-    });
+
+        // ordena por data mais recente
+        conversations.sort((a, b) => {
+          const timeA = a.lastMessageTime?.getTime?.() || 0;
+          const timeB = b.lastMessageTime?.getTime?.() || 0;
+          return timeB - timeA;
+        });
+
+        callback(conversations);
+      },
+      (error) => {
+        console.error("Listen conversations error:", error);
+      }
+    );
 
     this.unsubscribes.push(unsubscribe);
     return unsubscribe;
@@ -201,16 +233,22 @@ class MessagesService {
   async markAsRead(conversationId, messageId) {
     try {
       await updateDoc(
-        doc(db, 'conversations', conversationId, 'messages', messageId),
+        doc(
+          db,
+          "conversations",
+          conversationId,
+          "messages",
+          messageId
+        ),
         { read: true }
       );
     } catch (error) {
-      console.error('Mark as read error:', error);
+      console.error("Mark as read error:", error);
     }
   }
 
   unsubscribeAll() {
-    this.unsubscribes.forEach(unsubscribe => unsubscribe());
+    this.unsubscribes.forEach((unsubscribe) => unsubscribe());
     this.unsubscribes = [];
   }
 }
