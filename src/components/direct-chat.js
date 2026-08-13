@@ -119,9 +119,6 @@ function openConversation(conv) {
   setTimeout(() => messageInput.focus(), 400);
 }
 
-// Marca "estou vendo esta conversa" e renova a cada 10s enquanto o chat
-// estiver aberto — a Cloud Function usa isso pra não mandar push de algo
-// que o usuário já está vendo na tela.
 function startActivePresence(conversationId) {
   stopActivePresence();
   messagesService.setActiveIn(conversationId, true);
@@ -142,10 +139,6 @@ function stopActivePresence() {
 
 backBtn.addEventListener('click', () => {
   stopActivePresence();
-  // Só derruba os listeners da conversa aberta (mensagens + typing).
-  // unsubscribeAll() derrubava também o listener da lista de conversas,
-  // fazendo a lista parar de atualizar em tempo real depois da primeira
-  // vez que o usuário abria um chat.
   messagesService.unsubscribeConversation();
   currentConversationId = null;
   currentOtherUser = null;
@@ -154,8 +147,6 @@ backBtn.addEventListener('click', () => {
 
 window.addEventListener('beforeunload', () => {
   if (currentConversationId) {
-    // best-effort; nem sempre completa antes do unload, mas o TTL de 15s
-    // na Cloud Function já cobre o caso de não completar
     messagesService.setActiveIn(currentConversationId, false);
   }
 });
@@ -307,7 +298,6 @@ blockUserBtn.addEventListener('click', async () => {
   } else {
     const r = await authService.blockUser(currentOtherUser.username);
     if (r.success) {
-      // Idem: só derruba os listeners da conversa aberta, não a lista inteira.
       messagesService.unsubscribeConversation();
       showList();
     }
@@ -337,7 +327,7 @@ logoutBtn.addEventListener('click', async () => {
   if (confirm('Sign out of your account?')) {
     stopActivePresence();
     messagesService.unsubscribeAll();
-    await unregisterPushForCurrentUser(); // remove o token ANTES de deslogar
+    await unregisterPushForCurrentUser();
     await authService.logout();
     window.location.href = 'login.html';
   }
