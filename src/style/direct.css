@@ -150,7 +150,6 @@
 
     .header__compose:active { opacity: 0.6; }
 
-    /* Chat header */
     .chat-header {
       display: flex;
       align-items: center;
@@ -219,8 +218,7 @@
     }
 
     .btn-icon:active { opacity: 0.6; }
-
-    /* ── Search ── */
+    
     .search-wrap {
       padding: 10px 16px;
       flex-shrink: 0;
