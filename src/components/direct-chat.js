@@ -1,5 +1,6 @@
 import { authService } from '../services/auth.js';
 import { messagesService } from '../services/messages.js';
+import { registerPushForCurrentUser, unregisterPushForCurrentUser } from '../services/push.js';
 
 let currentConversationId = null;
 let currentOtherUser = null;
@@ -7,6 +8,7 @@ let typingTimeout = null;
 let isTyping = false;
 let replyTo = null;
 let actionsPanelOpen = false;
+let activeHeartbeat = null;
 
 const viewList = document.getElementById('viewList');
 const viewChat = document.getElementById('viewChat');
@@ -53,6 +55,7 @@ function showList() {
 authService.onAuthStateChanged((user) => {
   if (!user) { window.location.href = 'login.html'; return; }
   loadConversations();
+  registerPushForCurrentUser();
 });
 
 function loadConversations() {
@@ -111,14 +114,46 @@ function openConversation(conv) {
     typingIndicator.textContent = typing ? `${conv.otherUser.displayName} is typing…` : '';
   });
 
+  startActivePresence(conv.id);
+
   setTimeout(() => messageInput.focus(), 400);
 }
 
+// Marca "estou vendo esta conversa" e renova a cada 10s enquanto o chat
+// estiver aberto — a Cloud Function usa isso pra não mandar push de algo
+// que o usuário já está vendo na tela.
+function startActivePresence(conversationId) {
+  stopActivePresence();
+  messagesService.setActiveIn(conversationId, true);
+  activeHeartbeat = setInterval(() => {
+    messagesService.setActiveIn(conversationId, true);
+  }, 10000);
+}
+
+function stopActivePresence() {
+  if (activeHeartbeat) {
+    clearInterval(activeHeartbeat);
+    activeHeartbeat = null;
+  }
+  if (currentConversationId) {
+    messagesService.setActiveIn(currentConversationId, false);
+  }
+}
+
 backBtn.addEventListener('click', () => {
+  stopActivePresence();
   messagesService.unsubscribeAll();
   currentConversationId = null;
   currentOtherUser = null;
   showList();
+});
+
+window.addEventListener('beforeunload', () => {
+  if (currentConversationId) {
+    // best-effort; nem sempre completa antes do unload, mas o TTL de 15s
+    // na Cloud Function já cobre o caso de não completar
+    messagesService.setActiveIn(currentConversationId, false);
+  }
 });
 
 function renderMessages(messages) {
@@ -295,7 +330,9 @@ searchInput.addEventListener('input', () => {
 
 logoutBtn.addEventListener('click', async () => {
   if (confirm('Sign out of your account?')) {
+    stopActivePresence();
     messagesService.unsubscribeAll();
+    await unregisterPushForCurrentUser(); // remove o token ANTES de deslogar
     await authService.logout();
     window.location.href = 'login.html';
   }

@@ -20,7 +20,7 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
   background: #000;
-  color: var(--text-dark);
+  color: #000;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -149,4 +149,53 @@ html, body {
 
 .mb-2 {
   margin-bottom: 16px;
+}
+
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+*:focus,
+*:focus-visible,
+*:active {
+  outline: none !important;
+}
+
+button,
+a,
+input,
+textarea,
+select,
+label {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+}
+
+button:focus,
+button:focus-visible,
+button:active {
+  outline: none !important;
+  transform: none !important;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img,
+button,
+a {
+  user-select: none;
+  -webkit-user-drag: none;
 }

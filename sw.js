@@ -123,3 +123,54 @@ self.addEventListener('message', async event => {
     event.ports[0]?.postMessage({ ok: true });
   }
 });
+
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyA9LsyhJbEY7zR2J8u-L6Mpd-Wh756YBcM",
+  authDomain: "inmessages.firebaseapp.com",
+  projectId: "inmessages",
+  storageBucket: "inmessages.firebasestorage.app",
+  messagingSenderId: "259201940965",
+  appId: "1:259201940965:web:b82ae81257063e8594c30c"
+});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  const data = payload.data || {};
+  if (data.type !== 'new_message') return;
+
+  const conversationId = data.conversationId;
+
+  showMessageNotification(data, conversationId);
+});
+
+function showMessageNotification(data, conversationId) {
+  self.registration.showNotification(data.title || 'inMessages', {
+    body: data.body || '',
+    icon: data.icon || './public/img/icon.png',
+    badge: './public/img/icon.png',
+    tag: `conv-${conversationId}`,
+    renotify: true,
+    data: { conversationId, url: `./direct.html?conversation=${conversationId}` },
+  });
+}
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || './direct.html';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('direct.html') && 'focus' in client) {
+          client.postMessage({ type: 'NOTIFICATION_CLICK', payload: event.notification.data });
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
+});
