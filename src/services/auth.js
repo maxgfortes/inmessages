@@ -23,7 +23,6 @@ class AuthService {
   }
 
   async register(email, password, username, displayName) {
-    // Validate locally first
     const cleanUsername = username.toLowerCase().trim();
     const cleanDisplay = displayName.trim();
 
@@ -41,25 +40,20 @@ class AuthService {
     }
 
     try {
-      // Check username availability
       const usernameRef = doc(db, 'usernames', cleanUsername);
       const usernameSnap = await getDoc(usernameRef);
       if (usernameSnap.exists()) {
         return { success: false, error: 'Username already taken' };
       }
 
-      // Pause auth listener
       this._isRegistering = true;
 
-      // Create auth user
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       const user = credential.user;
       const uid = user.uid;
 
-      // Wait for token to be ready
       await user.getIdToken();
 
-      // Write user doc
       console.log('📝 Writing /users doc...');
       await setDoc(doc(db, 'users', uid), {
         uid,
@@ -70,17 +64,12 @@ class AuthService {
         blocked:     [],
         blockedBy:   []
       });
-      console.log('✅ /users doc created');
 
-      // Write username doc
-      console.log('📝 Writing /usernames doc...');
       await setDoc(usernameRef, {
         uid,
         createdAt: serverTimestamp()
       });
-      console.log('✅ /usernames doc created');
 
-      // Set local state
       this.currentUser = user;
       this.currentUserData = {
         uid,
@@ -98,7 +87,6 @@ class AuthService {
       this._isRegistering = false;
       console.error('Register error:', error);
 
-      // Friendly error messages
       if (error.code === 'auth/email-already-in-use') {
         return { success: false, error: 'This email is already registered' };
       }

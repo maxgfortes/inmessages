@@ -142,7 +142,11 @@ function stopActivePresence() {
 
 backBtn.addEventListener('click', () => {
   stopActivePresence();
-  messagesService.unsubscribeAll();
+  // Só derruba os listeners da conversa aberta (mensagens + typing).
+  // unsubscribeAll() derrubava também o listener da lista de conversas,
+  // fazendo a lista parar de atualizar em tempo real depois da primeira
+  // vez que o usuário abria um chat.
+  messagesService.unsubscribeConversation();
   currentConversationId = null;
   currentOtherUser = null;
   showList();
@@ -303,7 +307,8 @@ blockUserBtn.addEventListener('click', async () => {
   } else {
     const r = await authService.blockUser(currentOtherUser.username);
     if (r.success) {
-      messagesService.unsubscribeAll();
+      // Idem: só derruba os listeners da conversa aberta, não a lista inteira.
+      messagesService.unsubscribeConversation();
       showList();
     }
   }

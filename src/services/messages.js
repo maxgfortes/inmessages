@@ -30,6 +30,7 @@ class MessagesService {
   constructor() {
     this.conversations = {};
     this.unsubscribes = [];
+    this.convUnsubscribes = [];
   }
 
   async createOrGetConversation(otherUsername) {
@@ -123,7 +124,7 @@ class MessagesService {
       console.error('Listen messages error:', error);
     });
 
-    this.unsubscribes.push(unsubscribe);
+    this.convUnsubscribes.push(unsubscribe);
     return unsubscribe;
   }
 
@@ -156,15 +157,10 @@ class MessagesService {
       console.error('Listen typing error:', error);
     });
 
-    this.unsubscribes.push(unsubscribe);
+    this.convUnsubscribes.push(unsubscribe);
     return unsubscribe;
   }
 
-  /**
-   * Marca/limpa presença do usuário atual nesta conversa. A Cloud Function
-   * de push lê `activeIn_{uid}` para decidir se pula a notificação porque
-   * o usuário já está com a conversa aberta.
-   */
   async setActiveIn(conversationId, isActive) {
     try {
       const currentUid = authService.currentUser.uid;
@@ -203,8 +199,7 @@ class MessagesService {
           lastMessageTime,
         });
       });
-      
-      // Ordena por lastMessageTime no client-side para evitar problemas com null
+
       conversations.sort((a, b) => {
         const timeA = a.lastMessageTime?.getTime() || 0;
         const timeB = b.lastMessageTime?.getTime() || 0;
@@ -231,9 +226,16 @@ class MessagesService {
     }
   }
 
+  unsubscribeConversation() {
+    this.convUnsubscribes.forEach(unsubscribe => unsubscribe());
+    this.convUnsubscribes = [];
+  }
+
   unsubscribeAll() {
     this.unsubscribes.forEach(unsubscribe => unsubscribe());
+    this.convUnsubscribes.forEach(unsubscribe => unsubscribe());
     this.unsubscribes = [];
+    this.convUnsubscribes = [];
   }
 }
 

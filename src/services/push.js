@@ -1,4 +1,4 @@
-import { app, db } from "../../public/firebase-config.js";
+import { auth, db } from "../../public/firebase-config.js";
 import { authService } from "./auth.js";
 import {
   getMessaging,
@@ -24,7 +24,7 @@ let messagingInstance = null;
 async function getMessagingSafe() {
   if (messagingInstance) return messagingInstance;
   if (!(await isSupported())) return null;
-  messagingInstance = getMessaging(app);
+  messagingInstance = getMessaging(auth.app);
   return messagingInstance;
 }
 
